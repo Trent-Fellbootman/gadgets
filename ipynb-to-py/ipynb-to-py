@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+import sys
+import json
+
+def ipynb_to_py(data: str):
+    """
+    convert .ipynb to .py
+    """
+    
+    converted = ''
+    
+    data = json.loads(data)
+    assert 'cells' in data.keys()
+    
+    for cell in data['cells']:
+        assert {'cell_type' and 'source'}.issubset(cell.keys())
+        
+        cell_type = cell['cell_type']
+        if cell_type == 'markdown':
+            converted += '\n\n"""\n\n\n'
+            for line in ['\t' + line for line in cell['source']]:
+                converted += line
+            converted += '\n\n\n"""\n\n'
+        elif cell_type == 'code':
+            converted += '\n'
+            for line in cell['source']:
+                converted += line
+            converted += '\n'
+        else:
+            raise ValueError('Unknown cell_type value: ' + cell_type)
+    
+    
+    return converted.strip('\n') + '\n'
+
+args = sys.argv
+
+if '--help' in args:
+    print('Convert .ipynb file to .py file.\n\nUsage: ipynb-to-py {{ipynb_path}} {{output_py_path}}')
+    exit()
+
+assert len(args) == 3, 'Failed to recognize arguments: ' + '; '.join(args[1:])
+
+with open(args[1]) as f:
+    converted = ipynb_to_py(f.read())
+
+with open(args[2], 'x') as f:
+    f.write(converted)
